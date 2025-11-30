@@ -9,6 +9,10 @@
 ## ✨ Funcionalidades
 
 - **Home** - Dashboard com visão geral da produtividade ( mockado )
+- **Grupos** - Competição saudável entre amigos com feed de estudos ( mockado )
+  - Feed de posts com tempo de estudo e fotos de resumos
+  - Ranking semanal entre membros do grupo
+  - Criação de posts compartilhando progresso
 - **Atividades** - Histórico e acompanhamento de tarefas ( mockado )
 - **Perfil** - Configurações e estatísticas do usuário ( mockado )
 
@@ -29,10 +33,16 @@ mobile/
 │   ├── index.tsx          # Tela de entrada
 │   └── (tabs)/            # Navegação por abas
 │       ├── home/          # Tela Home
+│       ├── groups/        # Tela de Grupos
+│       │   ├── index.tsx  # Lista de grupos
+│       │   └── [id].tsx   # Detalhes do grupo (feed + ranking)
 │       ├── activity/      # Tela de Atividades
 │       └── profile/       # Tela de Perfil
 ├── components/            # Componentes reutilizáveis
 │   ├── screens/          # Componentes específicos por tela
+│   │   ├── home/         # Componentes da Home
+│   │   ├── groups/       # Componentes de Grupos
+│   │   └── profile/      # Componentes do Perfil
 │   ├── Header.tsx        # Header global
 │   ├── StatCard.tsx      # Cards de estatísticas
 │   └── ActivityCard.tsx  # Cards de atividades
