@@ -1,50 +1,132 @@
-# Welcome to your Expo app 👋
+# Prodify Mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+> Aplicativo mobile de produtividade desenvolvido com **React Native** e **Expo**, focado em ajudar usuários a acompanhar suas tarefas, metas e atividades diárias.
 
-## Get started
+![Expo](https://img.shields.io/badge/Expo-54.0-000020?style=flat-square&logo=expo)
+![React Native](https://img.shields.io/badge/React%20Native-0.81-61DAFB?style=flat-square&logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript)
 
-1. Install dependencies
+## ✨ Funcionalidades
 
+- **Home** - Dashboard com visão geral da produtividade ( mockado )
+- **Atividades** - Histórico e acompanhamento de tarefas ( mockado )
+- **Perfil** - Configurações e estatísticas do usuário ( mockado )
+
+## 🛠️ Tecnologias
+
+- [Expo](https://expo.dev) - Framework de desenvolvimento
+- [Expo Router](https://docs.expo.dev/router/introduction/) - Navegação baseada em arquivos
+- [React Native Reanimated](https://docs.swmansion.com/react-native-reanimated/) - Animações fluidas
+- [Expo Blur](https://docs.expo.dev/versions/latest/sdk/blur-view/) - Efeitos de blur nativos
+- TypeScript - Tipagem estática
+
+## 📁 Estrutura do Projeto
+
+```
+mobile/
+├── app/                    # Rotas (Expo Router)
+│   ├── _layout.tsx        # Layout principal
+│   ├── index.tsx          # Tela de entrada
+│   └── (tabs)/            # Navegação por abas
+│       ├── home/          # Tela Home
+│       ├── activity/      # Tela de Atividades
+│       └── profile/       # Tela de Perfil
+├── components/            # Componentes reutilizáveis
+│   ├── screens/          # Componentes específicos por tela
+│   ├── Header.tsx        # Header global
+│   ├── StatCard.tsx      # Cards de estatísticas
+│   └── ActivityCard.tsx  # Cards de atividades
+├── constants/            # Constantes e tema
+│   └── theme.ts         # Cores, espaçamentos, tipografia
+└── assets/              # Imagens e ícones
+```
+
+## 🚀 Como Executar
+
+### Pré-requisitos
+
+- [Node.js](https://nodejs.org/) (v18 ou superior)
+- [Android Studio](https://developer.android.com/studio) (para emulador Android)
+- [Xcode](https://developer.apple.com/xcode/) (para simulador iOS - apenas macOS)
+
+### Instalação
+
+1. Clone o repositório e acesse a pasta mobile:
+   ```bash
+   cd mobile
+   ```
+
+2. Instale as dependências:
    ```bash
    npm install
    ```
 
-2. Start the app
-
+3. Gere o build nativo (primeira vez):
    ```bash
-   npx expo start
+   npx expo prebuild
    ```
 
-In the output, you'll find options to open the app in a
+### Executando
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
+**Development Build (Recomendado):**
 ```bash
-npm run reset-project
+# Android
+npx expo run:android
+
+# iOS (apenas macOS)
+npx expo run:ios
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+**Com Expo Go (funcionalidades limitadas):**
+```bash
+npx expo start
+```
 
-## Learn more
+**Com Tunnel (para dispositivos físicos em redes diferentes):**
+```bash
+npx expo start --tunnel
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+## 🔧 Solução de Problemas
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### SocketTimeoutException / Connection Reset
 
-## Join the community
+Se encontrar erros de conexão com o Metro bundler:
 
-Join our community of developers creating universal apps.
+1. Configure o ADB reverse:
+   ```bash
+   adb reverse tcp:8081 tcp:8081
+   ```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+2. Verifique se a porta 8081 está livre:
+   ```bash
+   netstat -ano | findstr :8081
+   ```
+
+3. Execute o Metro e o build em terminais separados do **Windows** (não WSL)
+
+### Limpar Cache
+
+```bash
+npx expo start --clear
+```
+
+## 🎨 Design System
+
+O app utiliza um tema escuro com verde como cor primária:
+
+| Cor | Hex | Uso |
+|-----|-----|-----|
+| Background | `#0D0D0D` | Fundo principal |
+| Surface | `#1A1A1A` | Cards e containers |
+| Primary | `#22C55E` | Ações e destaques |
+| Text | `#FFFFFF` | Texto principal |
+| Text Secondary | `#8A8A8A` | Texto secundário |
+
+## 📄 Licença
+
+Este projeto é privado e pertence à Prodify Startup.
+
+---
+
+Desenvolvido com 💚 pela equipe Prodify
