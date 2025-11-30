@@ -62,6 +62,26 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="groups/index"
+        options={{
+          title: 'Grupos',
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon
+              name="people"
+              nameOutline="people-outline"
+              color={color}
+              focused={focused}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="groups/[id]"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
         name="activity/index"
         options={{
           title: 'Atividade',
