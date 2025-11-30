@@ -1,6 +1,6 @@
 # Prodify Mobile
 
-> Aplicativo mobile de produtividade desenvolvido com **React Native** e **Expo**, focado em ajudar usuários a acompanhar suas tarefas, metas e atividades diárias.
+> Aplicativo mobile de produtividade desenvolvido com **React Native** e **Expo**, focado em ajudar usuários a acompanhar suas tarefas, metas e atividades diárias em grupos com amigos e competindo de forma saudável.
 
 ![Expo](https://img.shields.io/badge/Expo-54.0-000020?style=flat-square&logo=expo)
 ![React Native](https://img.shields.io/badge/React%20Native-0.81-61DAFB?style=flat-square&logo=react)
