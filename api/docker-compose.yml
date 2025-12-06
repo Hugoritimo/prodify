@@ -1,0 +1,17 @@
+name: prodify
+
+services:
+  db:
+    container_name: prodify-db
+    image: postgres:17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: prodify
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+  
+volumes:
+  db-data:
