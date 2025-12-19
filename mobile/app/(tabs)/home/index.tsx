@@ -10,11 +10,10 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState<any>(null);
 
-  // Função para buscar dados do NestJS
   const loadHomeData = async () => {
     try {
       setLoading(true);
-      // Por enquanto usamos o VictorG fixo, conforme o registro no banco
+      
       const response = await api.get('/user/VictorG'); 
       setUserData(response.data);
     } catch (error) {
@@ -38,27 +37,27 @@ export default function HomeScreen() {
     );
   }
 
-  // Mapeamos os dados do banco para os seus componentes visuais
+  // Mapeei os dados do banco para os seus componentes visuais
   const dynamicStats = [
     { 
       icon: 'checkmark-done' as const, 
       iconColor: colors.primary, 
       iconBackground: colors.transparent.primary, 
-      value: 0, // Implementaremos Tasks em breve
+      value: 0, // Aqui vamos implementar as Tasks
       label: 'Tarefas' 
     },
     { 
       icon: 'flame' as const, 
       iconColor: colors.success, 
       iconBackground: colors.transparent.success, 
-      value: userData?.streak || 0, // Valor vindo do Prisma
+      value: userData?.streak || 0, // valor que vem do prisma
       label: 'Dias seguidos' 
     },
     { 
       icon: 'trophy' as const, 
       iconColor: colors.info, 
       iconBackground: colors.transparent.info, 
-      value: userData?.points || 0, // Os 100 pontos iniciais
+      value: userData?.points || 0, // adicionei 100 pontos iniciais, ja tava assim saporra kkkkk
       label: 'XP Total' 
     },
   ];
@@ -89,7 +88,7 @@ export default function HomeScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Usando a porcentagem baseada nos pontos iniciais */}
+        {/* tentei fazer um calculo de porcentagem, baseado nos ganhos, vamos melhorar isso dps */}
         <ProductivityCard percentage={userData?.points ? 85 : 0} period="Meta atual" />
         
         <StatsGrid stats={dynamicStats} />

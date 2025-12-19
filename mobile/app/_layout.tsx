@@ -1,5 +1,5 @@
 import { Stack, useRouter, useSegments } from "expo-router";
-import { useEffect, useState } from "react"; // Adicionamos o useState
+import { useEffect, useState } from "react"; 
 import { AuthProvider, useAuth } from "../src/contexts/AuthContext";
 
 function RootLayoutNav() {
@@ -8,14 +8,14 @@ function RootLayoutNav() {
   const router = useRouter();
   const [isReady, setIsReady] = useState(false); // Novo estado para controle
 
-  // 1. Primeiro useEffect para garantir que o Layout montou
+  
   useEffect(() => {
     setIsReady(true);
   }, []);
 
-  // 2. Segundo useEffect para a lógica de navegação
+  
   useEffect(() => {
-    if (!isReady) return; // Só executa se o componente já estiver montado
+    if (!isReady) return; 
 
     const inAuthGroup = segments[0] === "(auth)";
 
@@ -27,11 +27,11 @@ function RootLayoutNav() {
   }, [signed, segments, isReady]);
 
   return (
-   // Dentro do seu Stack no RootLayoutNav
+  
 <Stack screenOptions={{ headerShown: false }}>
   <Stack.Screen name="index" />
   <Stack.Screen name="(auth)/signup" />
-  <Stack.Screen name="(auth)/login" /> {/* Adicione esta linha */}
+  <Stack.Screen name="(auth)/login" /> 
   <Stack.Screen name="(tabs)" />
 </Stack>
   );
