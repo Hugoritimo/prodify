@@ -1,29 +1,86 @@
+import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View, ActivityIndicator, Alert } from 'react-native';
 import { Header } from '../../../components';
 import { ProductivityCard, RecentActivities, StatsGrid } from '../../../components/screens/home';
 import { colors } from '../../../constants/theme';
-
-const stats = [
-  { icon: 'checkmark-done' as const, iconColor: colors.primary, iconBackground: colors.transparent.primary, value: 24, label: 'Tarefas' },
-  { icon: 'flame' as const, iconColor: colors.success, iconBackground: colors.transparent.success, value: 7, label: 'Dias seguidos' },
-  { icon: 'time' as const, iconColor: colors.info, iconBackground: colors.transparent.info, value: '12h', label: 'Focado' },
-];
-
-const recentActivities = [
-  { icon: 'document-text' as const, iconColor: colors.primary, iconBackground: colors.transparent.primary, title: 'Projeto concluido', time: 'Ha 2 horas' },
-  { icon: 'trophy' as const, iconColor: colors.success, iconBackground: colors.transparent.success, title: 'Meta atingida', time: 'Ha 5 horas' },
-  { icon: 'star' as const, iconColor: colors.warning, iconBackground: colors.transparent.warning, title: 'Nova conquista', time: 'Ontem' },
-];
+import api from '../../../src/services/api';
 
 export default function HomeScreen() {
+  const [loading, setLoading] = useState(true);
+  const [userData, setUserData] = useState<any>(null);
+
+  // Função para buscar dados do NestJS
+  const loadHomeData = async () => {
+    try {
+      setLoading(true);
+      // Por enquanto usamos o VictorG fixo, conforme o registro no banco
+      const response = await api.get('/user/VictorG'); 
+      setUserData(response.data);
+    } catch (error) {
+      console.error("Erro na API:", error);
+      Alert.alert("Erro", "Não foi possível carregar seus dados do servidor.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadHomeData();
+  }, []);
+
+  // Enquanto os dados não chegam do Docker/Prisma
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator color={colors.primary} size="large" />
+      </View>
+    );
+  }
+
+  // Mapeamos os dados do banco para os seus componentes visuais
+  const dynamicStats = [
+    { 
+      icon: 'checkmark-done' as const, 
+      iconColor: colors.primary, 
+      iconBackground: colors.transparent.primary, 
+      value: 0, // Implementaremos Tasks em breve
+      label: 'Tarefas' 
+    },
+    { 
+      icon: 'flame' as const, 
+      iconColor: colors.success, 
+      iconBackground: colors.transparent.success, 
+      value: userData?.streak || 0, // Valor vindo do Prisma
+      label: 'Dias seguidos' 
+    },
+    { 
+      icon: 'trophy' as const, 
+      iconColor: colors.info, 
+      iconBackground: colors.transparent.info, 
+      value: userData?.points || 0, // Os 100 pontos iniciais
+      label: 'XP Total' 
+    },
+  ];
+
+  // Exemplo de atividades recentes (podemos buscar do banco depois)
+  const recentActivities = [
+    { 
+      icon: 'person-add' as const, 
+      iconColor: colors.primary, 
+      iconBackground: colors.transparent.primary, 
+      title: 'Conta criada', 
+      time: 'Agora mesmo' 
+    },
+  ];
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
       
       <Header 
-        title="Usuario" 
-        subtitle="Ola," 
+        title={userData?.username || "Guerreiro"} 
+        subtitle="Olá," 
         showNotification 
       />
 
@@ -32,9 +89,10 @@ export default function HomeScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <ProductivityCard percentage={85} period="Esta semana" />
+        {/* Usando a porcentagem baseada nos pontos iniciais */}
+        <ProductivityCard percentage={userData?.points ? 85 : 0} period="Meta atual" />
         
-        <StatsGrid stats={stats} />
+        <StatsGrid stats={dynamicStats} />
         
         <RecentActivities 
           activities={recentActivities} 
@@ -57,5 +115,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
+    paddingTop: 10,
   },
 });

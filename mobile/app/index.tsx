@@ -1,5 +1,7 @@
 import { Redirect } from "expo-router";
 
 export default function Index() {
-  return <Redirect href={"/(tabs)/home" as any} />;
+  // Mudamos de (tabs)/home para (auth)/signup
+  // Assim o app abre direto na tela que você acabou de criar!
+  return <Redirect href="/(auth)/signup" />;
 }
