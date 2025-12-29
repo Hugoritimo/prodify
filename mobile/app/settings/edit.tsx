@@ -83,9 +83,7 @@ export default function EditProfileScreen() {
         formData.append('file', { uri: avatar, name: filename, type });
       }
 
-      // IMPORTANTE: Seu backend precisa ter uma rota PUT/PATCH que aceite Multipart/Form-Data
-      // Se não tiver upload de arquivo no backend ainda, vai atualizar só o texto
-      // Aqui estou assumindo uma rota genérica de update
+      // Faz a requisição para atualizar o perfil
       await api.patch(`/user/${user.id}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
