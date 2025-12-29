@@ -18,6 +18,10 @@ export class UserService {
                 isPremium: true,
                 avatarUrl: true,
                 createdAt: true,
+                activities: { // Opcional: trazer as atividades recentes se precisar
+                    take: 5,
+                    orderBy: { createdAt: 'desc' }
+                }
             },
         });
 
@@ -26,6 +30,12 @@ export class UserService {
         }
 
         return usuario;
+    }
+
+    // --- ALIAS (Atalho) ---
+    // Isso garante que se o Controller chamar "findByUsername", ele usa o "buscarPerfil"
+    async findByUsername(username: string) {
+        return this.buscarPerfil(username);
     }
 
     // 2. Busca apenas as estatísticas (para os StatCards da Home)
@@ -47,6 +57,21 @@ export class UserService {
                 points: {
                     increment: quantidade,
                 },
+            },
+        });
+    }
+
+    // 4. NOVO: Busca o Ranking Global (Top 10)
+    async getLeaderboard() {
+        return this.prisma.user.findMany({
+            orderBy: { points: 'desc' }, // Ordena do maior XP para o menor
+            take: 10, // Pega apenas os 10 primeiros
+            select: {
+                id: true,
+                username: true,
+                points: true,
+                avatarUrl: true,
+                streak: true,
             },
         });
     }

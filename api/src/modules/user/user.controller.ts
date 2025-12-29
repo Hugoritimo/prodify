@@ -5,13 +5,20 @@ import { UserService } from './user.service';
 export class UserController {
     constructor(private readonly userService: UserService) { }
 
-    // Rota para buscar o perfil completo
+    // 1. ROTA DE RANKING (IMPORTANTE: Deve vir ANTES de :username)
+    // Se vier depois, o sistema acha que "leaderboard" é um nome de usuário.
+    @Get('leaderboard/global')
+    async getLeaderboard() {
+        return this.userService.getLeaderboard();
+    }
+
+    // 2. Rota para buscar o perfil completo
     @Get(':username')
     async getPerfil(@Param('username') username: string) {
         return this.userService.buscarPerfil(username);
     }
 
-    // Rota para buscar apenas os Stats (pontos e streak)
+    // 3. Rota para buscar apenas os Stats (pontos e streak)
     @Get(':username/stats')
     async getStats(@Param('username') username: string) {
         return this.userService.buscarStats(username);

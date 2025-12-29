@@ -15,12 +15,13 @@ import {
   Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics'; // Para a vibração (Dopamina)
+import * as Haptics from 'expo-haptics'; // Para vibração
 import { Header } from '../../../components';
 import { ProductivityCard, RecentActivities, StatsGrid } from '../../../components/screens/home';
+import FocusTimer from '../../../components/FocusTimer'; // <--- O NOVO TIMER IMPORTADO AQUI
 import { colors } from '../../../constants/theme';
 import { useAuth } from '../../../src/contexts/AuthContext';
-import taskService from '../../../src/services/taskService'; // Importação corrigida (sem chaves)
+import taskService from '../../../src/services/taskService';
 import api from '../../../src/services/api';
 
 export default function HomeScreen() {
@@ -30,23 +31,24 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [userData, setUserData] = useState<any>(null);
-  const [tasks, setTasks] = useState<any[]>([]); // Lista de tarefas reais
+  const [tasks, setTasks] = useState<any[]>([]);
 
   // Estados do Modal de Criação
   const [modalVisible, setModalVisible] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [creating, setCreating] = useState(false);
 
+  // Estado do MODO FOCO (Timer)
+  const [focusedTask, setFocusedTask] = useState<any>(null);
+
   // --- BUSCAR DADOS DO BACKEND ---
   const loadHomeData = async () => {
     if (!user?.id && !user?.username) return;
 
     try {
-      // 1. Busca dados do usuário (XP, Streak)
       const userResponse = await api.get(`/user/${user.username}`); 
       setUserData(userResponse.data);
 
-      // 2. Busca tarefas e filtra apenas as pendentes
       const tasksData = await taskService.getTasks(userResponse.data.id);
       const pendingTasks = tasksData.filter((t: any) => !t.completed);
       setTasks(pendingTasks);
@@ -68,24 +70,36 @@ export default function HomeScreen() {
     loadHomeData();
   }, [user]);
 
-  // --- AÇÃO DE CONCLUIR TAREFA (DOPAMINA) ---
+  // --- AÇÃO 1: INICIAR O FOCO (Abre o Timer) ---
+  function handleStartFocus(task: any) {
+    // Abre o modal do cronômetro para essa tarefa
+    setFocusedTask(task);
+  }
+
+  // --- AÇÃO 2: TERMINOU O TIMER (Ganha XP e Conclui) ---
+  async function handleTimerFinish(taskId: string) {
+    setFocusedTask(null); // Fecha o timer
+    await handleCompleteTask(taskId); // Chama a conclusão real
+  }
+
+  // --- AÇÃO 3: CONCLUIR TAREFA NO BACKEND ---
   async function handleCompleteTask(taskId: string) {
     try {
       // 1. Feedback Físico (Vibração)
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-      // 2. Atualiza visualmente ANTES do servidor (Otimismo para parecer instantâneo)
+      // 2. Atualiza visualmente (Otimismo)
       setTasks(oldTasks => oldTasks.filter(t => t.id !== taskId));
       
-      // 3. Chama o Backend para salvar e ganhar XP
+      // 3. Chama o Backend
       await taskService.completeTask(taskId, userData.id);
 
-      // 4. Recarrega dados em segundo plano para atualizar o XP total lá em cima
+      // 4. Recarrega dados
       loadHomeData();
 
     } catch (error) {
       Alert.alert("Erro", "Falha ao sincronizar conclusão.");
-      loadHomeData(); // Reverte se der erro
+      loadHomeData();
     }
   }
 
@@ -96,12 +110,10 @@ export default function HomeScreen() {
 
     try {
       setCreating(true);
-      // Cria tarefa valendo XP e com 25min de foco sugerido
-      await taskService.createTask(newTaskTitle, 25, userData.id);
-      
+      await taskService.createTask(newTaskTitle, 25, userData.id); // Padrão 25min
       setModalVisible(false);
       setNewTaskTitle('');
-      loadHomeData(); // Atualiza a lista
+      loadHomeData(); 
     } catch (error) {
       Alert.alert("Erro", "Não foi possível criar a tarefa.");
     } finally {
@@ -109,7 +121,6 @@ export default function HomeScreen() {
     }
   }
 
-  // Loading inicial
   if (loading) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
@@ -118,7 +129,6 @@ export default function HomeScreen() {
     );
   }
 
-  // Dados para os cards do topo
   const dynamicStats = [
     { 
       icon: 'checkmark-done' as const, 
@@ -149,7 +159,7 @@ export default function HomeScreen() {
       
       <Header 
         title={userData?.username || "Guerreiro"} 
-        subtitle="Vamos evoluir," 
+        subtitle="Hora de focar," 
         showNotification 
       />
 
@@ -161,23 +171,21 @@ export default function HomeScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }
       >
-        {/* Barra de Progresso de Nível */}
         <ProductivityCard 
           percentage={userData?.points ? Math.min((userData.points / 1000) * 100, 100) : 0} 
           period="Próximo Nível" 
         />
         
-        {/* Cards de Resumo */}
         <StatsGrid stats={dynamicStats} />
 
-        {/* --- LISTA DE TAREFAS (O Foco do Usuário) --- */}
+        {/* --- LISTA DE TAREFAS --- */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Missões de Hoje</Text>
         </View>
 
         {tasks.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>Tudo limpo! Crie um novo desafio.</Text>
+            <Text style={styles.emptyText}>Sem missões ativas. Crie um desafio!</Text>
           </View>
         ) : (
           tasks.map((task) => (
@@ -187,12 +195,13 @@ export default function HomeScreen() {
                 <Text style={styles.taskSub}>{task.duration} min • Valendo 10 XP</Text>
               </View>
               
+              {/* BOTÃO DE PLAY (Inicia o Timer) */}
               <TouchableOpacity 
                 style={styles.checkButton}
                 activeOpacity={0.6}
-                onPress={() => handleCompleteTask(task.id)}
+                onPress={() => handleStartFocus(task)}
               >
-                <Ionicons name="ellipse-outline" size={28} color={colors.primary} />
+                <Ionicons name="play-circle-outline" size={32} color={colors.primary} />
               </TouchableOpacity>
             </View>
           ))
@@ -206,7 +215,7 @@ export default function HomeScreen() {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* --- BOTÃO FLUTUANTE (FAB) --- */}
+      {/* FAB (Botão Flutuante) */}
       <TouchableOpacity 
         style={styles.fab} 
         activeOpacity={0.8} 
@@ -232,7 +241,7 @@ export default function HomeScreen() {
             
             <TextInput 
               style={styles.input}
-              placeholder="Ex: Ler 10 páginas de Clean Code"
+              placeholder="Ex: Ler 10 páginas"
               placeholderTextColor="#666"
               value={newTaskTitle}
               onChangeText={setNewTaskTitle}
@@ -264,6 +273,14 @@ export default function HomeScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
+      {/* --- MODAL DO TIMER (MODO FOCO) --- */}
+      <FocusTimer 
+        visible={!!focusedTask}
+        task={focusedTask}
+        onCancel={() => setFocusedTask(null)}
+        onFinish={handleTimerFinish}
+      />
+
     </View>
   );
 }
@@ -273,11 +290,9 @@ const styles = StyleSheet.create({
   scrollView: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingTop: 10 },
   
-  // Cabeçalho da Seção
   sectionHeader: { marginTop: 24, marginBottom: 12 },
   sectionTitle: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
   
-  // Card de Tarefa
   taskCard: {
     backgroundColor: '#1E1E1E',
     borderRadius: 12,
@@ -288,7 +303,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     borderLeftWidth: 4,
     borderLeftColor: colors.primary,
-    // Sombra leve
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -300,11 +314,9 @@ const styles = StyleSheet.create({
   taskSub: { color: '#AAA', fontSize: 12, marginTop: 4 },
   checkButton: { padding: 4 },
   
-  // Estado Vazio
   emptyState: { padding: 30, alignItems: 'center', opacity: 0.7 },
   emptyText: { color: '#666', fontStyle: 'italic', fontSize: 14 },
 
-  // Botão Flutuante (FAB)
   fab: {
     position: 'absolute',
     bottom: 90, 
@@ -322,7 +334,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4.65,
   },
 
-  // Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.8)',

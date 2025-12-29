@@ -1,19 +1,25 @@
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Header } from '../../../components';
-import { GroupsList, MyGroupsHeader } from '../../../components/screens/groups';
+import { 
+  GroupsList, 
+  MyGroupsHeader, 
+  CreateGroupModal 
+} from '../../../components/screens/groups';
 import { colors } from '../../../constants/theme';
 
-// Dados mockados dos grupos
-const myGroups = [
+// DADOS MOCKADOS INICIAIS
+const INITIAL_GROUPS = [
   {
     id: '1',
     name: 'Estudantes de Medicina',
+    description: 'Foco total na residência! 🩺',
     members: 24,
     yourRank: 3,
     totalStudyTime: '156h',
-    weeklyGoal: 20,
+    weeklyGoal: 200,
     weeklyProgress: 85,
     lastActivity: 'Há 5 min',
     image: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=200',
@@ -21,79 +27,78 @@ const myGroups = [
   {
     id: '2',
     name: 'Concurseiros 2025',
+    description: 'Rumo à aprovação no federal.',
     members: 156,
     yourRank: 12,
     totalStudyTime: '89h',
-    weeklyGoal: 30,
+    weeklyGoal: 300,
     weeklyProgress: 62,
     lastActivity: 'Há 30 min',
     image: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=200',
-  },
-  {
-    id: '3',
-    name: 'Dev Squad',
-    members: 8,
-    yourRank: 1,
-    totalStudyTime: '234h',
-    weeklyGoal: 25,
-    weeklyProgress: 100,
-    lastActivity: 'Há 2 horas',
-    image: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=200',
   },
 ];
 
 export default function GroupsScreen() {
   const router = useRouter();
+  const [groups, setGroups] = useState(INITIAL_GROUPS);
+  const [modalVisible, setModalVisible] = useState(false);
 
+  // --- AÇÃO DE NAVEGAÇÃO CORRIGIDA ---
+  // Agora passamos os dados do grupo como parâmetros
   const handleGroupPress = (groupId: string) => {
-    router.push(`/(tabs)/groups/${groupId}` as any);
+    const group = groups.find(g => g.id === groupId);
+    
+    if (group) {
+      router.push({
+        pathname: `/(tabs)/groups/${groupId}`,
+        params: {
+          name: group.name,
+          description: group.description || 'Sem descrição definida.',
+          image: group.image,
+          membersCount: group.members,
+          weeklyGoal: group.weeklyGoal,
+          currentHours: 156 // Mockado por enquanto
+        }
+      } as any);
+    }
   };
 
-  const handleCreateGroup = () => {
-    // TODO: Abrir modal de criação de grupo
-    console.log('Create group');
+  const handleCreateGroup = (name: string, description: string, goal: number) => {
+    const newGroup = {
+      id: String(Date.now()),
+      name: name,
+      description: description,
+      members: 1,
+      yourRank: 1,
+      totalStudyTime: '0h',
+      weeklyGoal: goal,
+      weeklyProgress: 0,
+      lastActivity: 'Agora',
+      image: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=200',
+    };
+
+    setGroups([newGroup, ...groups]); 
+    setModalVisible(false);
   };
 
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      
-      <Header 
-        title="Grupos" 
-        subtitle="Seus" 
-        showNotification 
-      />
+      <Header title="Grupos" subtitle="Seus Squads" showNotification />
 
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <MyGroupsHeader 
-          totalGroups={myGroups.length}
-          onCreateGroup={handleCreateGroup}
-        />
-        
-        <GroupsList 
-          groups={myGroups}
-          onGroupPress={handleGroupPress}
-        />
-
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <MyGroupsHeader totalGroups={groups.length} onCreateGroup={() => setModalVisible(true)} />
+        <GroupsList groups={groups} onGroupPress={handleGroupPress} />
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      <CreateGroupModal visible={modalVisible} onClose={() => setModalVisible(false)} onCreate={handleCreateGroup} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-  },
+  container: { flex: 1, backgroundColor: colors.background },
+  scrollView: { flex: 1 },
+  scrollContent: { paddingHorizontal: 20 },
 });

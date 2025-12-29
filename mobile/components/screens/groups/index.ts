@@ -1,4 +1,4 @@
-export { GroupCard } from './GroupCard';
-export { GroupsList } from './GroupsList';
-export { MyGroupsHeader } from './MyGroupsHeader';
-
+export * from './GroupCard';
+export * from './GroupsList';
+export * from './MyGroupsHeader';
+export * from './CreateGroupModal';

@@ -47,6 +47,7 @@ export default function TabLayout() {
         ),
       }}
     >
+      {/* Tab 1: Home */}
       <Tabs.Screen
         name="home/index"
         options={{
@@ -61,6 +62,8 @@ export default function TabLayout() {
           ),
         }}
       />
+
+      {/* Tab 2: Grupos */}
       <Tabs.Screen
         name="groups/index"
         options={{
@@ -75,26 +78,33 @@ export default function TabLayout() {
           ),
         }}
       />
+      
+      {/* Rota Oculta (Detalhes do Grupo) */}
+      {/* O Expo Router vai ignorar se o arquivo não existir ainda, sem quebrar */}
       <Tabs.Screen
         name="groups/[id]"
         options={{
           href: null,
         }}
       />
+
+      {/* Tab 3: Ranking (Ajustado para sua pasta atual) */}
       <Tabs.Screen
-        name="activity/index"
+        name="ranking/index" 
         options={{
-          title: 'Atividade',
+          title: 'Ranking', // Ou 'Atividade', se preferir mudar o nome visual
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
-              name="flash"
-              nameOutline="flash-outline"
+              name="trophy" // Usei trophy pois combina mais com Ranking
+              nameOutline="trophy-outline"
               color={color}
               focused={focused}
             />
           ),
         }}
       />
+
+      {/* Tab 4: Perfil */}
       <Tabs.Screen
         name="profile/index"
         options={{
