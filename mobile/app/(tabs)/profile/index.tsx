@@ -7,7 +7,10 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../../constants/theme';
 import { useAuth } from '../../../src/contexts/AuthContext';
-import api from '../../../src/services/api';
+import api from '../../../src/services/api'; // Import da API para pegar a URL base
+
+// 1. IMPORTAÇÃO DO HEATMAP
+import { FocusHeatmap } from '../../../components/FocusHeatmap';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
@@ -16,28 +19,46 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [profileData, setProfileData] = useState<any>(null);
+  
+  // 2. ESTADO PARA O HEATMAP
+  const [heatmapData, setHeatmapData] = useState([]);
 
+  // Busca dados do perfil
   const loadProfile = async () => {
     if (!user?.username) return;
-
     try {
       const response = await api.get(`/user/${user.username}`);
       setProfileData(response.data);
     } catch (error) {
       console.log("Erro ao carregar perfil:", error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
     }
   };
 
+  // 3. Busca dados do histórico (Heatmap)
+  const fetchHistory = async () => {
+    try {
+      const response = await api.get('/focus/history');
+      setHeatmapData(response.data);
+    } catch (error) {
+      console.log("Erro ao carregar heatmap:", error);
+    }
+  };
+
+  // Carrega tudo ao iniciar
+  const loadAllData = async () => {
+    setLoading(true);
+    await Promise.all([loadProfile(), fetchHistory()]);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    loadProfile();
+    loadAllData();
   }, [user]);
 
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    loadProfile();
+    await Promise.all([loadProfile(), fetchHistory()]);
+    setRefreshing(false);
   }, []);
 
   const handleSignOut = () => {
@@ -50,6 +71,18 @@ export default function ProfileScreen() {
   const currentLevel = profileData ? Math.floor(profileData.points / 1000) + 1 : 1;
   const nextLevelXp = currentLevel * 1000;
   const progress = profileData ? (profileData.points % 1000) / 10 : 0;
+
+  // --- A CORREÇÃO MÁGICA ESTÁ AQUI 👇 ---
+  const getAvatarUrl = (path: string) => {
+    if (!path) return null;
+    // Se já tiver http (ex: Google, Github), usa direto
+    if (path.startsWith('http')) return path;
+    
+    // Se for caminho relativo (/uploads/...), cola a URL do servidor
+    // Ex: http://192.168.1.5:3000 + /uploads/foto.jpg
+    return `${api.defaults.baseURL}${path}`;
+  };
+  // ---------------------------------------
 
   if (loading) {
     return (
@@ -71,7 +104,11 @@ export default function ProfileScreen() {
         <View style={styles.header}>
           <View style={styles.avatarContainer}>
              {profileData?.avatarUrl ? (
-               <Image source={{ uri: profileData.avatarUrl }} style={styles.avatarImage} />
+               <Image 
+                 // AQUI USAMOS A FUNÇÃO PARA CORRIGIR O LINK 👇
+                 source={{ uri: getAvatarUrl(profileData.avatarUrl) }} 
+                 style={styles.avatarImage} 
+               />
              ) : (
                <Text style={styles.avatarText}>{user?.username?.charAt(0).toUpperCase()}</Text>
              )}
@@ -110,7 +147,10 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* MENU DE OPÇÕES (Links Atualizados para a pasta /settings) */}
+        {/* 4. AQUI ENTRA O HEATMAP */}
+        <FocusHeatmap values={heatmapData} />
+
+        {/* MENU DE OPÇÕES */}
         <View style={styles.menuContainer}>
           <Text style={styles.menuTitle}>Conta</Text>
           

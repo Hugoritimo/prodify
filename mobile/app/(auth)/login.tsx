@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import api from '../../src/services/api'; 
 import { useAuth } from '../../src/contexts/AuthContext';
+import { colors } from '../../constants/theme'; // Opcional: Se quiser usar seu tema
 
 export default function Login() {
   const router = useRouter();
@@ -19,21 +20,32 @@ export default function Login() {
 
     try {
       setLoading(true);
-      // Rota de login no seu backend NestJS
+
+      // 1. Faz o POST para o NestJS
       const response = await api.post('/auth/login', {
         email,
         password,
       });
 
-      if (response.status === 200 || response.status === 201) {
-        // 1. Salva o usuário no contexto (usando o username que o backend devolve)
-        signIn(response.data.username); 
-        
-        Alert.alert('Sucesso', `Bem-vindo de volta, ${response.data.username}!`);
-        
-        // 2. O RootLayout detecta o 'signed' e te leva para /(tabs)/home
+      // 2. Extrai o Token e os Dados do Usuário da resposta
+      // O seu backend deve retornar: { access_token: "...", username: "...", id: "..." }
+      const { access_token, username, id } = response.data;
+
+      if (!access_token) {
+        throw new Error("Token não fornecido pelo servidor.");
       }
+
+      // 3. Chama a nova função signIn passando o TOKEN e o OBJETO USUÁRIO
+      await signIn(access_token, { 
+        username: username, 
+        id: id // Se o backend mandar ID, salvamos também
+      });
+      
+      // O redirecionamento acontece automaticamente pelo RootLayout ou:
+      // router.replace('/(tabs)/home');
+
     } catch (error: any) {
+      console.error(error);
       const msg = error.response?.data?.message || 'E-mail ou senha incorretos.';
       Alert.alert('Erro no Login', msg);
     } finally {
@@ -70,9 +82,11 @@ export default function Login() {
         onPress={handleLogin}
         disabled={loading}
       >
-        <Text style={styles.buttonText}>
-          {loading ? 'Entrando...' : 'Entrar'}
-        </Text>
+        {loading ? (
+             <ActivityIndicator color="#FFF" />
+        ) : (
+             <Text style={styles.buttonText}>Entrar</Text>
+        )}
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => router.replace('/(auth)/signup')}>
@@ -105,6 +119,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 8,
+    flexDirection: 'row',
+    justifyContent: 'center'
   },
   buttonText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
   link: { 

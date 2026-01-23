@@ -4,14 +4,14 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker'; // Importante
-import { colors, borderRadius } from '../../constants/theme';
-import { useAuth } from '../../src/contexts/AuthContext'; // Para pegar o ID/Username
+import * as ImagePicker from 'expo-image-picker';
+import { colors } from '../../constants/theme';
+import { useAuth } from '../../src/contexts/AuthContext';
 import api from '../../src/services/api';
 
 export default function EditProfileScreen() {
   const router = useRouter();
-  const { user, updateUser } = useAuth(); // updateUser servirá para atualizar o contexto local se precisar
+  const { user, signOut } = useAuth(); // Adicionei o signOut aqui
   
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
@@ -20,7 +20,7 @@ export default function EditProfileScreen() {
   const [loadingData, setLoadingData] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // 1. Carrega os dados atuais do usuário ao abrir a tela
+  // 1. Carrega dados
   useEffect(() => {
     async function loadCurrentData() {
       if (!user?.username) return;
@@ -30,9 +30,16 @@ export default function EditProfileScreen() {
         
         setName(username || '');
         setBio(bio || '');
-        setAvatar(avatarUrl);
+        
+        let fullAvatarUrl = avatarUrl;
+        if (avatarUrl && !avatarUrl.startsWith('http')) {
+            fullAvatarUrl = `${api.defaults.baseURL}${avatarUrl}`;
+        }
+        setAvatar(fullAvatarUrl);
+
       } catch (error) {
-        Alert.alert("Erro", "Não foi possível carregar seus dados.");
+        // Se der erro ao carregar dados, pode ser token expirado também
+        console.log("Erro ao carregar perfil:", error);
       } finally {
         setLoadingData(false);
       }
@@ -40,60 +47,96 @@ export default function EditProfileScreen() {
     loadCurrentData();
   }, [user]);
 
-  // 2. Função para escolher imagem da galeria
+  // 2. Escolher Imagem
   const pickImage = async () => {
-    // Pede permissão
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     
     if (permissionResult.granted === false) {
-      Alert.alert("Permissão necessária", "Precisamos acessar sua galeria para trocar a foto.");
+      Alert.alert("Permissão necessária", "Precisamos acessar sua galeria.");
       return;
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true, // Permite cortar a foto quadrada
+      mediaTypes: ImagePicker.MediaTypeOptions.Images, 
+      allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.7, // Reduz um pouco a qualidade para não pesar no upload
+      quality: 0.8,
     });
 
     if (!result.canceled) {
-      setAvatar(result.assets[0].uri); // Mostra a preview da nova imagem
+      setAvatar(result.assets[0].uri);
     }
   };
 
-  // 3. Salvar alterações (Upload + Update)
+  // 3. Salvar (COM VERIFICAÇÃO DE TOKEN ANTES DE TENTAR)
   const handleSave = async () => {
-    if (!user?.id) return;
+    // --- VERIFICAÇÃO DE SEGURANÇA ---
+    // @ts-ignore
+    const token = api.defaults.headers.common['Authorization'] || api.defaults.headers.Authorization;
+
+    if (!token) {
+        Alert.alert(
+            "Sessão Inválida", 
+            "Você precisa fazer login novamente para salvar alterações.",
+            [
+                { text: "Fazer Login", onPress: () => {
+                    signOut(); // Desloga o usuário
+                    router.replace('/auth/login'); // Manda pro login (ajuste a rota se precisar)
+                }}
+            ]
+        );
+        return; // PARA TUDO AQUI. Não tenta enviar sem token.
+    }
+    // --------------------------------
+
     setSaving(true);
+    console.log("🟢 INICIANDO SALVAMENTO...");
 
     try {
-      // Prepara o formulário para envio (Multipart para enviar arquivo)
-      const formData = new FormData();
-      formData.append('username', name);
-      formData.append('bio', bio);
-
-      // Se tiver uma imagem nova (que comece com file://), adiciona ao envio
+      const baseUrl = api.defaults.baseURL; 
+      
       if (avatar && avatar.startsWith('file://')) {
+        console.log("📸 Preparando envio da foto...");
+        
         const filename = avatar.split('/').pop();
         const match = /\.(\w+)$/.exec(filename || '');
-        const type = match ? `image/${match[1]}` : `image`;
+        const type = match ? `image/${match[1]}` : `image/jpeg`;
 
-        // @ts-ignore: O React Native aceita esse objeto como arquivo
+        const formData = new FormData();
+        // @ts-ignore
         formData.append('file', { uri: avatar, name: filename, type });
+
+        const uploadUrl = `${baseUrl}/user/upload-avatar`;
+        console.log(`🚀 Enviando para: ${uploadUrl}`);
+
+        const response = await fetch(uploadUrl, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'Authorization': token, // Agora temos certeza que o token existe
+            'Accept': 'application/json',
+          },
+        });
+
+        console.log("📡 Status HTTP:", response.status);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.log("❌ Resposta do servidor:", errorText);
+            throw new Error(`Erro do servidor: ${response.status}`);
+        }
+        
+        console.log("✅ Foto enviada com sucesso!");
       }
 
-      // Faz a requisição para atualizar o perfil
-      await api.patch(`/user/${user.id}`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      // await api.patch(`/user/${user.id}`, { username: name, bio }); 
 
-      Alert.alert("Sucesso", "Perfil atualizado!");
+      Alert.alert("Sucesso", "Perfil atualizado! 🚀");
       router.back();
 
-    } catch (error) {
-      console.error(error);
-      Alert.alert("Erro", "Falha ao atualizar perfil. Tente novamente.");
+    } catch (error: any) {
+      console.error("❌ ERRO NO PROCESSO:", error);
+      Alert.alert("Erro de Conexão", "Não foi possível enviar a foto. Verifique se o servidor está rodando.");
     } finally {
       setSaving(false);
     }
@@ -124,7 +167,6 @@ export default function EditProfileScreen() {
       </View>
 
       <ScrollView style={styles.content}>
-        {/* Seção de Avatar */}
         <View style={styles.avatarSection}>
             <TouchableOpacity onPress={pickImage} style={styles.avatarContainer}>
                 {avatar ? (
@@ -144,7 +186,6 @@ export default function EditProfileScreen() {
             </TouchableOpacity>
         </View>
 
-        {/* Inputs */}
         <View style={styles.inputGroup}>
             <Text style={styles.label}>Nome de Exibição</Text>
             <TextInput 

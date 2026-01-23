@@ -18,7 +18,7 @@ export class UserService {
                 isPremium: true,
                 avatarUrl: true,
                 createdAt: true,
-                activities: { // Opcional: trazer as atividades recentes se precisar
+                activities: {
                     take: 5,
                     orderBy: { createdAt: 'desc' }
                 }
@@ -33,12 +33,11 @@ export class UserService {
     }
 
     // --- ALIAS (Atalho) ---
-    // Isso garante que se o Controller chamar "findByUsername", ele usa o "buscarPerfil"
     async findByUsername(username: string) {
         return this.buscarPerfil(username);
     }
 
-    // 2. Busca apenas as estatísticas (para os StatCards da Home)
+    // 2. Busca apenas as estatísticas
     async buscarStats(username: string) {
         return await this.prisma.user.findUnique({
             where: { username },
@@ -49,7 +48,7 @@ export class UserService {
         });
     }
 
-    // 3. Adiciona pontos ao usuário (útil para quando ele terminar uma Task)
+    // 3. Adiciona pontos ao usuário
     async adicionarPontos(username: string, quantidade: number) {
         return await this.prisma.user.update({
             where: { username },
@@ -61,11 +60,11 @@ export class UserService {
         });
     }
 
-    // 4. NOVO: Busca o Ranking Global (Top 10)
+    // 4. Busca o Ranking Global (Top 10)
     async getLeaderboard() {
         return this.prisma.user.findMany({
-            orderBy: { points: 'desc' }, // Ordena do maior XP para o menor
-            take: 10, // Pega apenas os 10 primeiros
+            orderBy: { points: 'desc' },
+            take: 10,
             select: {
                 id: true,
                 username: true,
@@ -73,6 +72,23 @@ export class UserService {
                 avatarUrl: true,
                 streak: true,
             },
+        });
+    }
+
+    // 5. NOVO: Atualiza o Avatar do Usuário (A peça que faltava!)
+    async updateAvatar(userId: string, avatarUrl: string) {
+        return this.prisma.user.update({
+            where: { id: userId }, // Busca pelo ID (que vem do Token JWT)
+            data: {
+                avatarUrl: avatarUrl
+            },
+            // Retorna os dados atualizados para o App já atualizar a tela
+            select: {
+                id: true,
+                username: true,
+                avatarUrl: true,
+                points: true
+            }
         });
     }
 }
